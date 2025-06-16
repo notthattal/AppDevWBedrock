@@ -54,7 +54,7 @@ export default function CustomLogin({ onSignIn }) {
           <div className="bot-avatar">
             <Bot className="bot-icon" />
           </div>
-          <h1 className="login-title">AI Assistant</h1>
+          <h1 className="login-title">CharacterBot</h1>
           <p className="login-subtitle">
             {mode === 'signin' && 'Sign in to continue'}
             {mode === 'signup' && 'Create your account'}
