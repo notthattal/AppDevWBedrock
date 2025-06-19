@@ -58,7 +58,7 @@ User message: {user_message}"""
         
         return system_prompt
     
-    def process_message(self, user_message: str, conversation_history: List = None) -> str:
+    def process_message(self, user_message: str, conversation_history: List = None, auth_header: str = None) -> str:
         """Main message processing with persona handling"""
         
         if not self.current_persona:
@@ -72,9 +72,9 @@ User message: {user_message}"""
             prompt = user_message
         
         # Call Bedrock Lambda
-        return self.call_bedrock(prompt, conversation_history)
+        return self.call_bedrock(prompt, conversation_history, auth_header)
     
-    def call_bedrock(self, prompt: str, conversation_history: List = None) -> str:
+    def call_bedrock(self, prompt: str, conversation_history: List = None, auth_header: str = None) -> str:
         full_prompt = prompt
         if conversation_history:
             history_text = "\n".join([f"User: {msg['user']}\nAssistant: {msg['assistant']}" for msg in conversation_history[-5:]])
@@ -82,7 +82,8 @@ User message: {user_message}"""
         
         response = requests.post(
             'https://x2pwa5y235.execute-api.us-east-1.amazonaws.com/Prod/generate',
-            json={'prompt': full_prompt}
+            json={'prompt': full_prompt},
+            headers={"Authorization": auth_header}
         )
         
         return response.json()
