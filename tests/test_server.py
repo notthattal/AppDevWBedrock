@@ -24,6 +24,7 @@ class TestFlaskServer:
         
         response = client.post('/generate', 
                              json={'prompt': 'Hello'},
+                             headers={'Authorization': 'Bearer testtoken'},
                              content_type='application/json')
         
         assert response.status_code == 200
@@ -32,7 +33,7 @@ class TestFlaskServer:
         data = json.loads(response.data)
         assert data == {'completion': 'Test response'}
         
-        mock_process.assert_called_once_with('Hello', [])
+        mock_process.assert_called_once_with('Hello', [], 'Bearer testtoken')
     
     @patch.object(agent, 'process_message')
     def test_generate_with_history(self, mock_process, client):
@@ -41,13 +42,14 @@ class TestFlaskServer:
         
         response = client.post('/generate',
                              json={'prompt': 'How are you?', 'history': history},
+                             headers={'Authorization': 'Bearer testtoken'},
                              content_type='application/json')
         
         assert response.status_code == 200
         data = json.loads(response.data)
         assert data == {'completion': 'Response with history'}
         
-        mock_process.assert_called_once_with('How are you?', history)
+        mock_process.assert_called_once_with('How are you?', history, 'Bearer testtoken')
     
     @patch.object(agent, 'process_message')
     def test_generate_empty_prompt(self, mock_process, client):
@@ -55,17 +57,18 @@ class TestFlaskServer:
         
         response = client.post('/generate',
                              json={},
+                             headers={'Authorization': 'Bearer testtoken'},
                              content_type='application/json')
         
         assert response.status_code == 200
-        mock_process.assert_called_once_with('', [])
+        mock_process.assert_called_once_with('', [], 'Bearer testtoken')
     
     @patch.object(agent, 'process_message')
     def test_generate_agent_exception(self, mock_process, client):
         mock_process.side_effect = Exception("Agent error")
-        response = client.post('/generate', json={'prompt': 'Hello'})
+        response = client.post('/generate', json={'prompt': 'Hello'}, headers={'Authorization': 'Bearer testtoken'})
         assert response.status_code == 500
     
     def test_generate_no_content_type(self, client):
-        response = client.post('/generate', data=json.dumps({'prompt': 'Hello'}))
+        response = client.post('/generate', data=json.dumps({'prompt': 'Hello'}), headers={'Authorization': 'Bearer testtoken'})
         assert response.status_code == 415 

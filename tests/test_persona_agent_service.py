@@ -68,7 +68,8 @@ class TestPersonaAgent:
         assert result == {'completion': 'I am Superman!'}
         mock_post.assert_called_once_with(
             'https://x2pwa5y235.execute-api.us-east-1.amazonaws.com/Prod/generate',
-            json={'prompt': 'Test prompt'}
+            json={'prompt': 'Test prompt'},
+            headers={'Authorization': None}
         )
 
     @patch('services.persona_agent_service.requests.post')
@@ -87,7 +88,8 @@ class TestPersonaAgent:
         expected_prompt = "Previous conversation:\nUser: Hello\nAssistant: Hi there\nUser: How are you?\nAssistant: I am fine\n\nCurrent message: New message"
         mock_post.assert_called_once_with(
             'https://x2pwa5y235.execute-api.us-east-1.amazonaws.com/Prod/generate',
-            json={'prompt': expected_prompt}
+            json={'prompt': expected_prompt},
+            headers={'Authorization': None}
         )
         assert result == {'completion': 'Response with history'}
 
@@ -124,7 +126,7 @@ class TestPersonaAgent:
         result = agent.process_message("Help me")
 
         mock_build_prompt.assert_called_once_with("Help me")
-        mock_call_bedrock.assert_called_once_with("Superman prompt", None)
+        mock_call_bedrock.assert_called_once_with("Superman prompt", None, None)
         assert result == {'completion': 'Superman response'}
 
     @patch.object(PersonaAgent, 'call_bedrock')
@@ -135,7 +137,7 @@ class TestPersonaAgent:
         mock_call_bedrock.return_value = {'completion': 'Batman response'}
         history = [{'user': 'test', 'assistant': 'response'}]
 
-        result = agent.process_message("Help", history)
+        result = agent.process_message("Help", history, None)
 
-        mock_call_bedrock.assert_called_once_with("Batman prompt", history)
+        mock_call_bedrock.assert_called_once_with("Batman prompt", history, None)
         assert result == {'completion': 'Batman response'}
