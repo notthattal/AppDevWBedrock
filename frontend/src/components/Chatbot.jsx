@@ -42,6 +42,16 @@ export default function Chatbot({ user, signOut }) {
         const token = session.tokens.idToken.toString();
         setAuthToken(token);
         setIsConnected(true);
+
+        // Reset persona once on mount
+        await fetch('http://localhost:5050/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ reset: true }),
+        });
       } catch (error) {
         console.error('Error getting auth token:', error);
         setIsConnected(false);
@@ -66,22 +76,14 @@ export default function Chatbot({ user, signOut }) {
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsLoading(true);
- 
+    const currentToken = authToken;
+    
     try {
-      // Refresh token if needed
-      let currentToken = authToken;
-      try {
-        const session = await Auth.currentSession();
-        currentToken = session.getIdToken().getJwtToken();
-        setAuthToken(currentToken);
-      } catch (refreshError) {
-        console.warn('Token refresh failed, using existing token');
-      }
-
       const response = await fetch('http://localhost:5050/generate', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentToken}`
         },
         body: JSON.stringify({
             prompt: inputText
@@ -89,10 +91,13 @@ export default function Chatbot({ user, signOut }) {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
+        const errText = await response.text();
+        if (response.status === 401 && errText.includes('Missing or invalid')) {
+          throw new Error('Missing token or bad Authorization header');
+        } else if (response.status === 401) {
           throw new Error('Authentication failed. Please sign in again.');
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}, ${errText}`);
       }
 
       const data = await response.json();
@@ -112,8 +117,13 @@ export default function Chatbot({ user, signOut }) {
       setIsConnected(false);
       
       let errorText = "Sorry, I'm having trouble connecting to the server";
-      if (error.message.includes('Authentication')) {
-        errorText = "Authentication error. Please try signing out and back in.";
+
+      if (error.message.includes('Missing token')) {
+        errorText = "Message couldn’t be sent due to an authentication issue";
+      } else if (error.message.includes('Authentication')) {
+        errorText = "Authentication error. Please try signing out and back in";
+      } else if (error.message.includes('HTTP error')) {
+        errorText = error.message;
       }
       
       const errorMessage = {
